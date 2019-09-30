@@ -1,0 +1,29 @@
+{
+  "name": "coactive-client-extensions",
+  "version": "1.0.0",
+  "description": "Coactive client extensions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DataVoke/coactive-client-extensions.git"
+  },
+  "keywords": [
+    "coactive",
+    "client",
+    "extensions"
+  ],
+  "author": "Coactive, Inc.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DataVoke/coactive-client-extensions/issues"
+  },
+  "homepage": "https://github.com/DataVoke/coactive-client-extensions#readme",
+  "bit": {
+    "env": {},
+    "componentsDefaultDirectory": "components/{name}",
+    "packageManager": "npm"
+  }
+}
