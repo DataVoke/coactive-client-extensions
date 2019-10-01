@@ -1,1 +1,1 @@
-import default from './api'
+export default from './api'
