@@ -1,5 +1,5 @@
 var assert = require('assert');
-var loadExtension = require('../lib/api/loadExtension');
+var loadExtension = require('../src/api/loadExtension');
 
 describe('loadExtension', function() {
     it('default property should be a function', function() {

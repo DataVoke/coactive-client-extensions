@@ -4,7 +4,7 @@
   "description": "Coactive client extensions",
   "main": "lib/index.js",
   "scripts": {
-    "test": "(npm run build && mocha)",
+    "test": "(npm run build && mocha --require @babel/register)",
     "build": "babel src -d lib --source-maps true"
   },
   "repository": {
@@ -38,6 +38,7 @@
     "@babel/core": "^7.6.2",
     "@babel/plugin-proposal-export-default-from": "^7.5.2",
     "@babel/preset-env": "^7.6.2",
+    "@babel/register": "^7.6.2",
     "mocha": "^6.2.1"
   },
   "dependencies": {}

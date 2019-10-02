@@ -29,6 +29,15 @@ export default function _apiUtils(context) {
             // Create an element of the appropriate kind based on the resource type specified (JS or CSS)
             let newElement = null;
             switch (true) {
+                case resourceTypeLC.indexOf("module") > -1:
+                    newElement = createElement("script", "module");
+                    if (url) newElement.src = url;
+                    elementSourceProperty = "src";
+                    const crossoriginAttr = context.document.createAttribute("crossorigin");
+                    crossoriginAttr.value = "anonymous";
+                    newElement.setAttributeNode(crossoriginAttr);
+                    break;
+
                 case resourceTypeLC.indexOf("javascript") > -1 || resourceTypeLC.indexOf("js") > -1:
                     newElement = createElement("script", "text/javascript");
                     if (url) newElement.src = url;
