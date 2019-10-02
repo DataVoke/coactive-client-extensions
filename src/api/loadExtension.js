@@ -1,8 +1,4 @@
-import _apiUtils from './internal/_apiUtils';
-
 export default function loadExtension(context = window || {}) {
-    _apiUtils(context);
-
     // NOTE: All code herein must be run before other extension modules as they depend on it.
     // NOTE: All code herein should be ES5-compatible. Other extensions will use this module to transpile back to ES5 when necessary, so they may use ES6+
 
