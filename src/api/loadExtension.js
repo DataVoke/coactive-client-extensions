@@ -1,7 +1,7 @@
 // NOTE: All code herein should be ES5-compatible. Other extensions will use this module to transpile back to ES5 when necessary, so they may use ES6+
 
 /**
- * Custom Action: context.api.loadExtension
+ * Custom Action: api.loadExtension
  * Create an extension loader that can be used to extend the app's client-side API.
  */
 // These are dependencies of babel-standalone
@@ -12,11 +12,11 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); };
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
-if (!context.api.transformJavaScript) {
-    context.api.transformJavaScript = function (code, forceTransform) {
+if (!api.transformJavaScript) {
+    api.transformJavaScript = function (code, forceTransform) {
         if (code) {
             // Use Babel to transform JavaScript for older browsers, if available
-            if ((context.api._supportLegacyBrowser || forceTransform) && Babel) {
+            if ((api._supportLegacyBrowser || forceTransform) && Babel) {
                 // Coerce the code to a string in case it's a function and then transform it
                 if (typeof code !== "string") {
                     code = code.toString();
@@ -31,9 +31,9 @@ if (!context.api.transformJavaScript) {
     };
 }
 
-if (!context.api.evalTransformedJavaScript) {
-    context.api.evalTransformedJavaScript = function (code, forceTransform) {
-        var transformed = context.api.transformJavaScript(code, forceTransform);
+if (!api.evalTransformedJavaScript) {
+    api.evalTransformedJavaScript = function (code, forceTransform) {
+        var transformed = api.transformJavaScript(code, forceTransform);
         if (transformed) {
             if (typeof transformed === "string") {
                 return eval(transformed);
@@ -47,23 +47,23 @@ if (!context.api.evalTransformedJavaScript) {
 
 var overrideExtensionsRegisterAction = function () {
     // Override the original extensions.registerAction function to transform code for older browsers
-    if (!context.api._originalRegisterAction) {
-        context.api._originalRegisterAction = context.app.dv.cache.extensions.registerAction;
-        context.app.dv.cache.extensions.registerAction = function (action) {
+    if (!api._originalRegisterAction) {
+        api._originalRegisterAction = app.dv.cache.extensions.registerAction;
+        app.dv.cache.extensions.registerAction = function (action) {
             // Call the original function to register the actions
-            context.api._originalRegisterAction(action);
+            api._originalRegisterAction(action);
             // Replace each code block with its transformed version and evaluate it so the transformed code executes when called
             if (action.Definition.CreateSettingsPanel) {
-                action.Definition.CreateSettingsPanel = context.api.evalTransformedJavaScript("(" + action.Definition.CreateSettingsPanel + ")");
+                action.Definition.CreateSettingsPanel = api.evalTransformedJavaScript("(" + action.Definition.CreateSettingsPanel + ")");
             }
             if (action.Definition.Execute) {
-                action.Definition.Execute = context.api.evalTransformedJavaScript("(" + action.Definition.Execute + ")");
+                action.Definition.Execute = api.evalTransformedJavaScript("(" + action.Definition.Execute + ")");
             }
             if (action.Definition.GetFriendlyName) {
-                action.Definition.GetFriendlyName = context.api.evalTransformedJavaScript("(" + action.Definition.GetFriendlyName + ")");
+                action.Definition.GetFriendlyName = api.evalTransformedJavaScript("(" + action.Definition.GetFriendlyName + ")");
             }
             if (action.Definition.Settings) {
-                action.Definition.Settings = context.api.evalTransformedJavaScript("(" + action.Definition.Settings + ")");
+                action.Definition.Settings = api.evalTransformedJavaScript("(" + action.Definition.Settings + ")");
             }
         };
     }
@@ -71,19 +71,19 @@ var overrideExtensionsRegisterAction = function () {
 
 var overrideRunJavaScriptActionExecute = function () {
     // Override the original action Execute function to transform code for older browsers
-    if (!context.api._originalRunJavaScriptActionExecute) {
-        context.api._originalRunJavaScriptActionExecute = context.app.dv.actionLibrary.actionStores.dvCore.RunJavaScript.Definition.Execute;
-        context.app.dv.actionLibrary.actionStores.dvCore.RunJavaScript.Definition.Execute = function (options, callback) {
+    if (!api._originalRunJavaScriptActionExecute) {
+        api._originalRunJavaScriptActionExecute = app.dv.actionLibrary.actionStores.dvCore.RunJavaScript.Definition.Execute;
+        app.dv.actionLibrary.actionStores.dvCore.RunJavaScript.Definition.Execute = function (options, callback) {
             // Transform the JavaScript and call original Execute function
-            options.action.Settings.JsText = context.api.transformJavaScript(options.action.Settings.JsText);
-            context.api._originalRunJavaScriptActionExecute(options, callback);
+            options.action.Settings.JsText = api.transformJavaScript(options.action.Settings.JsText);
+            api._originalRunJavaScriptActionExecute(options, callback);
         };
     }
 };
 
-if (!context.api.loadExtension) {
+if (!api.loadExtension) {
     // Create an extension loader that can be used to extend the app's client-side API
-    context.api.loadExtension = function (namespace, loader) {
+    api.loadExtension = function (namespace, loader) {
         // Create the namespace if it doesn't exist
         if (typeof namespace === "string" && !eval(namespace)) {
             eval(namespace + " = {}");
@@ -91,9 +91,9 @@ if (!context.api.loadExtension) {
 
         // If we have a loader, execute it
         if (loader) {
-            if (context.api.evalTransformedJavaScript) {
+            if (api.evalTransformedJavaScript) {
                 // Transform JavaScript for older browsers if required and available
-                context.api.evalTransformedJavaScript("(" + loader + ")();");
+                api.evalTransformedJavaScript("(" + loader + ")();");
             } else {
                 loader();
             }
@@ -102,15 +102,15 @@ if (!context.api.loadExtension) {
 }
 
 // Determine if we need to support a legacy browser
-// (may be forced by setting context.api._supportLegacyBrowser to true; otherwise detected here)
-if (context.api._supportLegacyBrowser !== true && context.api.utils.supportsES6()) {
-    context.api._supportLegacyBrowser = false;
+// (may be forced by setting api._supportLegacyBrowser to true; otherwise detected here)
+if (api._supportLegacyBrowser !== true && api.utils.supportsES6()) {
+    api._supportLegacyBrowser = false;
 } else {
-    context.api._supportLegacyBrowser = true;
+    api._supportLegacyBrowser = true;
     // Load Babel to transform JavaScript for older browsers
-    context.api.utils.loadResource("babel-standalone@6.26.0", "npm", function() {
+    api.utils.loadResource("babel-standalone@6.26.0", "npm", function() {
         // Re-register all custom actions so they use transformed JavaScript
-        context.app.dv.cache.loadExtensionCache(context.app.dv.cache.extensions.allActions.Values);
+        app.dv.cache.loadExtensionCache(app.dv.cache.extensions.allActions.Values);
         executionHelper.resolve();
     });
     // We need to transform ES6 JavaScript to ES5
