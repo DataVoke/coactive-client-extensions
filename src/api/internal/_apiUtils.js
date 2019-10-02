@@ -22,7 +22,7 @@ export default function _apiUtils(context) {
                 const element = document.createElement(elementKind);
                 element.type = type;
                 // Generate what should be a unique ID based on the URL/raw content
-                element.id = window.btoa(url) || api.utils.generateHash(rawContent);
+                element.id = context.btoa(url) || api.utils.generateHash(rawContent);
                 return element;
             };
 
@@ -85,7 +85,7 @@ export default function _apiUtils(context) {
                         };
                     } else if (rawContent) {
                         // Only raw content was provided, so just wait a tick and call back
-                        window.setTimeout(function() {
+                        context.setTimeout(function() {
                             api.utils.runFunction(callback);
                         });
                     }
@@ -112,7 +112,7 @@ export default function _apiUtils(context) {
         },
         runFunction: (fn, thisArg, params) => {
             if (fn && typeof fn === "function") {
-                return fn.apply(thisArg || window, params);
+                return fn.apply(thisArg || context, params);
             }
         },
     }
