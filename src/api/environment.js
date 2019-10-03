@@ -2,7 +2,7 @@
  * Custom Action: Extend api.environment
  * Extends the api.environment namespace with additional helper functions.
  * Dependencies:
- *    api.environment.variables
+ *    api.loadExtension
  */
 // This is a quick way to remove/clear variables with a certain prefix.
 /*Example
@@ -17,16 +17,20 @@
     Executing api.environment.clearVariablesWithPrefix("order.", true) will remove all variables that start with "order."
 */
 // Clears/removes all variables that start with the the prefix
-api.environment.clearVariablesWithPrefix = (prefix, removeVariable = false) => {
-    if (api.environment && api.environment.variables) {
-        for (let key in api.environment.variables) {
-            if (key.startsWith(prefix)) {
-                if (removeVariable) {
-                    api.environment.removeVariable(key);
-                } else {
-                    api.environment.setVariableValue(key, "");
+api.loadExtension("api.environment", () => {
+    if (!api.environment.clearVariablesWithPrefix) {
+        api.environment.clearVariablesWithPrefix = (prefix, removeVariable = false) => {
+            if (api.environment && api.environment.variables) {
+                for (let key in api.environment.variables) {
+                    if (key.startsWith(prefix)) {
+                        if (removeVariable) {
+                            api.environment.removeVariable(key);
+                        } else {
+                            api.environment.setVariableValue(key, "");
+                        }
+                    }
                 }
             }
-        }
+        };
     }
-};
+});
