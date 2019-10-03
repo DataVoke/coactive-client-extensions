@@ -1,1 +1,1 @@
-{"version":3,"sources":["../../src/api/index.js"],"names":[],"mappings":";;;;;;;;;;;;AAAA","sourcesContent":["export { default as loadExtension } from './loadExtension';\n"],"file":"index.js"}
+{"version":3,"sources":["../../src/api/index.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;AAAA;;AACA","sourcesContent":["export { default as loadExtension } from './loadExtension';\nexport { default as utils } from './utils';\n"],"file":"index.js"}
