@@ -7,7 +7,7 @@
  *    api.bindingsRegistry.deregister
  *    api.utils.toLinker
  */
-capi.loadExtension("api.ui", () => {
+api.loadExtension("api.ui", () => {
     const overlayClassName = "overlayFieldWithElement";
 
     const getOverlayStyle = coordinates => {
