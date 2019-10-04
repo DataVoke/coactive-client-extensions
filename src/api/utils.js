@@ -305,4 +305,114 @@ api.loadExtension("api.utils", () => {
             }
         };
     }
+
+     if (!api.data.IcsGenerator) {
+         api.data.IcsGenerator = class IcsGenerator {
+            // From https://github.com/matthiasanderer/icsFormatter
+            constructor() {
+                if (navigator.userAgent.indexOf('MSIE') > -1 && navigator.userAgent.indexOf('MSIE 10') == -1) {
+                    console.log('Unsupported Browser');
+                    return;
+                }
+                this._LINE_SEPARATOR = (navigator.appVersion.indexOf('Win') === -1) ? '\n' : '\r\n';
+                this._calendarEvents = [];
+                this._calendarStartIndicator = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0'
+                ].join(this._LINE_SEPARATOR);
+                this._calendarEndIndicator = `${this._LINE_SEPARATOR}END:VCALENDAR`;
+            }
+
+            /**
+             * Returns events array
+             * @return {array} Events
+             */
+            get events() {
+                return this._calendarEvents;
+            }
+
+            /**
+             * Returns calendar string
+             * @return {string} Calendar in iCalendar format
+             */
+            get calendarString() {
+                return this._calendarStartIndicator + this._LINE_SEPARATOR + this._calendarEvents.join(this._LINE_SEPARATOR) + this._calendarEndIndicator;
+            }
+
+            /**
+             * Add event to the calendar
+             * @param  {string} subject     Subject/Title of event
+             * @param  {string} description Description of event
+             * @param  {string} location    Location of event
+             * @param  {string} begin       Beginning date of event
+             * @param  {string} stop        Ending date of event
+             */
+            addEvent(subject, description, location, begin, stop) {
+                const start_date = new Date(begin).addMinutes(begin.getTimezoneOffset());
+                const end_date = new Date(stop).addMinutes(stop.getTimezoneOffset());
+
+                const start_year = start_date.getFullYear().toString().padStart(4, "0");
+                const start_month = (start_date.getMonth() + 1).toString().padStart(2, "0");
+                const start_day = start_date.getDate().toString().padStart(2, "0");
+                const start_hours = start_date.getHours().toString().padStart(2, "0");
+                const start_minutes = start_date.getMinutes().toString().padStart(2, "0");
+                const start_seconds = start_date.getSeconds().toString().padStart(2, "0");
+
+                const end_year = end_date.getFullYear().toString().padStart(4, "0");
+                const end_month = (end_date.getMonth() + 1).toString().padStart(2, "0");
+                const end_day = end_date.getDate().toString().padStart(2, "0");
+                const end_hours = end_date.getHours().toString().padStart(2, "0");
+                const end_minutes = end_date.getMinutes().toString().padStart(2, "0");
+                const end_seconds = end_date.getSeconds().toString().padStart(2, "0");
+
+                // Since some calendars don't add 0 second events, we need to remove time if there is none...
+                let dtStart = '';
+                let dtEnd = '';
+                if (start_hours + start_minutes + start_seconds + end_hours + end_minutes + end_seconds !== 0) {
+                    // not all day - so this needs the time as well
+                    dtStart = `:${start_year}${start_month}${start_day}T${start_hours}${start_minutes}${start_seconds}Z`;
+                    dtEnd = `:${end_year}${end_month}${end_day}T${end_hours}${end_minutes}${end_seconds}Z`;
+                }
+                else {
+                    // if this time is midnight to midnight - then it is an "all day" event.
+                    dtStart = `;VALUE=DATE:${start_year}${start_month}${start_day}`;
+                    dtEnd = `;VALUE=DATE:${end_year}${end_month}${end_day}`;
+                }
+
+                const calendarEvent = [
+                    "BEGIN:VEVENT",
+                    "CLASS:PUBLIC",
+                    `DESCRIPTION:${description}`,
+                    `DTSTART${dtStart}`,
+                    `DTEND${dtEnd}`,
+                    `LOCATION:${location.replace(/\r/g, "\\, ")}`,
+                    `SUMMARY:${subject}`,
+                    "TRANSP:TRANSPARENT",
+                    "END:VEVENT",
+                ].join(this._LINE_SEPARATOR);
+
+                this._calendarEvents.push(calendarEvent);
+                return this;
+            }
+
+            /**
+             * Download calendar
+             * @param  {string} filename Filename
+             * @param  {string} ext      Extention
+             */
+            download(filename = "calendar.ics") {
+                if (this._calendarEvents.length < 1) {
+                    return false;
+                }
+                const content = `data:text/calendar;charset=utf8,${escape(this.calendarString)}`;
+                const downloadLink = document.createElement("a");
+                downloadLink.href = content;
+                downloadLink.download = filename;
+
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }
+        };
+    }
 });

@@ -373,7 +373,7 @@ api.loadExtension("api.ui", () => {
                     }
                 }
             } else {
-                console.log("Form could not be found, so setFormSize could not be executed.");
+                if (api._debugMode) console.log("Form could not be found, so setFormSize could not be executed.");
             }
         };
     }
@@ -385,7 +385,7 @@ api.loadExtension("api.ui", () => {
                 form.window.left = location.left || location.x;
                 form.window.top = location.top || location.y;
             } else {
-                console.log("Form could not be found, so setFormLocation could not be executed.");
+                if (api._debugMode) console.log("Form could not be found, so setFormLocation could not be executed.");
             }
         };
     }
@@ -479,7 +479,7 @@ api.loadExtension("api.ui", () => {
                 }
                 return booleanControl;
             } else {
-                console.log("Form is not visible, so checkboxToButtonPair could not be executed.");
+                if (api._debugMode) console.log("Form is not visible, so checkboxToButtonPair could not be executed.");
                 return null;
             }
         };
@@ -594,7 +594,7 @@ api.loadExtension("api.ui", () => {
 
                 return comboBoxControl;
             } else {
-                console.log("Form is not visible, so comboBoxToButtons could not be executed.");
+                if (api._debugMode) console.log("Form is not visible, so comboBoxToButtons could not be executed.");
                 return null;
             }
         };
@@ -698,7 +698,7 @@ api.loadExtension("api.ui", () => {
                         throw new Error(message);
                     }
                 } else {
-                    console.log("Could not create buttonGroupHelper since form is not visible.");
+                    if (api._debugMode) console.log("Could not create buttonGroupHelper since form is not visible.");
                 }
             }
 
@@ -893,13 +893,13 @@ api.loadExtension("api.ui", () => {
                         return field;
                     }
                 } else {
-                    console.log("No field UI Control was found for getFieldUIControl('", controlID, "'). Be sure the field is bound to a form control.");
-                    console.log(controlID);
+                    if (api._debugMode) console.log("No field UI Control was found for getFieldUIControl('", controlID, "'). Be sure the field is bound to a form control.");
+                    if (api._debugMode) console.log(controlID);
                     return null;
                 }
             } else {
-                console.log("No form specified and no 'current form'...getFieldUIControl('", controlID, "'), or form is hidden.");
-                console.log(controlID);
+                if (api._debugMode) console.log("No form specified and no 'current form'...getFieldUIControl('", controlID, "'), or form is hidden.");
+                if (api._debugMode) console.log(controlID);
                 return null;
             }
         };
@@ -920,13 +920,13 @@ api.loadExtension("api.ui", () => {
                 if (button && button.uiControl && Array.isArray(button.uiControl) && button.uiControl.length) {
                     return button.uiControl[0];
                 } else {
-                    console.log("No button UI Control was found for getButtonUIControl('", taskID, "'). Be sure the button is bound to a form task.");
-                    console.log(taskID);
+                    if (api._debugMode) console.log("No button UI Control was found for getButtonUIControl('", taskID, "'). Be sure the button is bound to a form task.");
+                    if (api._debugMode) console.log(taskID);
                     return null;
                 }
             } else {
-                console.log("No form specified and no 'current form'...getButtonUIControl('", taskID, "').");
-                console.log(taskID);
+                if (api._debugMode) console.log("No form specified and no 'current form'...getButtonUIControl('", taskID, "').");
+                if (api._debugMode) console.log(taskID);
                 return null;
             }
         };
@@ -979,10 +979,10 @@ api.loadExtension("api.ui", () => {
                     };
                     return coordinates;
                 } else {
-                    console.log("getFieldCoordinates: Unable to get control position.");
+                    if (api._debugMode) console.log("getFieldCoordinates: Unable to get control position.");
                 }
             } else {
-            console.log("getFieldCoordinates: Unabled to find form field for property UID: ", controlID);
+            if (api._debugMode) console.log("getFieldCoordinates: Unabled to find form field for property UID: ", controlID);
             }
             return null;
         };
@@ -1096,10 +1096,10 @@ api.loadExtension("api.ui", () => {
 
                     return iFrame; // Return the iFrame for additional use.
                 } else {
-                    console.log("overlayFieldWithIframe: Unable to get control position.");
+                    if (api._debugMode) console.log("overlayFieldWithIframe: Unable to get control position.");
                 }
             } else {
-                console.log("Unable to find form field for property UID: " + controlID);
+                if (api._debugMode) console.log("Unable to find form field for property UID: " + controlID);
             }
             return null;    // Return null if unable to overlay the iFrame.
         };

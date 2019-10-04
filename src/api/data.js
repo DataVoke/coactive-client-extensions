@@ -261,7 +261,7 @@ api.loadExtension("api.data", () => {
                                         }
                                         catch(ex) {
                                             //There was an error decoding the data
-                                            console.log(`An error occurred while performing a decodeURI on row: ${i} column ${columnCounter}`);
+                                            if (api._debugMode) console.log(`An error occurred while performing a decodeURI on row: ${i} column ${columnCounter}`);
                                         }
                                         columnCounter++;
 
@@ -452,22 +452,28 @@ api.loadExtension("api.data", () => {
         }
     }
 
-    if (!api.data.getEndpointResult) {
-         api.data.getEndpointResult = async (endpointName, inputParameters = {}) => {
-             try {
-                 return new Promise((resolve, reject) => {
-                     if (endpointName) {
-                         // const input = eval(`(function() { return ${inputParameters}; })()`);
-                         app.connection.call("Custom", endpointName, inputParameters, (result, error) => {
-                             resolve(result);
-                         });
-                     } else {
-                         reject("There is no endpoint specified.");
-                     }
-                 });
-             } catch (exc) {
-                 throw exc;
-             }
-         }
-     }
- });
+    if (!api.data.setBinaryValue) {
+        api.data.setBinaryValue = (gridValue, base64Value, fileName, fileDate = new Date(), fileHash = "") => {
+            if (gridValue instanceof app.dv.entities.GridValue) {
+                const valueMetadata = [
+                    { Key: "FileSize", Value: base64Value.length },
+                    { Key: "FileName", Value: fileName },
+                    { Key: "FileDate", Value: fileDate },
+                    { Key: "FileHash", Value: fileHash },
+                ];
+                app.dv.mvc.gridRecord.gridValue.setBinaryValue(gridValue, JSON.stringify(valueMetadata));
+                gridValue.dynamicValueEdit.Value = base64Value;
+                gridValue.dynamicValueEdit._State = app.dv.types.EntityStates.Modified;
+                gridValue.updateUI();
+                const mvc = gridValue && gridValue.parentRecord && gridValue.parentRecord.parentMVC;
+                const gridController = mvc && mvc.gridController;
+                if (gridController) {
+                    gridController.dataLoaded(mvc);
+                    gridController.uiGrid.vrp();
+                }
+            } else {
+                if (api._debugMode) console.log(`${gridValue} is not a GridValue.`);
+            }
+        };
+    }
+});
