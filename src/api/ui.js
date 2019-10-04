@@ -485,6 +485,39 @@ api.loadExtension("api.ui", () => {
         };
     }
 
+    if (!api.ui.setComboBoxList) {
+        api.ui.setComboBoxList = (combobox, form, list) => {
+            const hostForm = api.ui.ensureForm(form);
+            if (hostForm && hostForm.isVisible) {
+                const comboBoxControl = api.ui.ensureComboBox(combobox.comboBox || combobox, hostForm);
+                if (comboBoxControl) {
+                    comboBoxControl.setList(list || []);
+                }
+            }
+        };
+    }
+
+    if (!api.ui.fieldToComboBox) {
+        api.ui.fieldToComboBox = (field, form, list = []) => {
+            const hostForm = api.ui.ensureForm(form);
+            if (hostForm && hostForm.isVisible) {
+                if (field.raw) {
+                    field = field.raw;
+                }
+                const comboBox = new zebra.ui.dvComboBox(list || [], true);
+                comboBox.domInput = zebra.util.getWindow(form).getInput("combo");
+                comboBox.hAlign = zebra.layout.RIGHT;
+                comboBox.vAlign = field.definition.Orientation === 1 ? zebra.layout.STRETCH : zebra.layout.TOP;
+                field.textField.setVisible(false);
+                field.comboBox = comboBox;
+                // Pass through event handlers between the hidden text field and new combobox
+                field.comboBox.emitter = field.textField.emitter;
+                field.add(comboBox);
+                comboBox.applyStyle(field.currentStyle);
+            }
+        };
+    }
+
     if (!api.ui.comboBoxToButtons) {
         api.ui.comboBoxToButtons = ({
             combobox,
@@ -777,164 +810,6 @@ api.loadExtension("api.ui", () => {
 
             _allowRemoveValue(value) {
                 return this.valueCount - (this.hasValue(value) ? 1 : 0) >= this.allowedMinValueCount;
-            }
-        };
-    }
-
-    if (!api.ui.enhanceDateTimeControl) {
-        api.ui.enhanceDateTimeControl = ({
-            dateTimeProperty,
-            form,
-            orientation = "horizontal",
-            gap = null,
-        }) => {
-            const hostForm = api.ui.ensureForm(form);
-            if (hostForm && hostForm.isVisible) {
-                const dateTimeControl = api.ui.getFieldUIControl(dateTimeProperty, hostForm);
-                if (dateTimeControl) {
-                    // Hide existing DateTime control
-                    dateTimeControl.textField.setVisible(false);
-
-                    // Helper to add components to their containers and lay them out and style them consistently
-                    const addComponentToContainer = (component, container) => {
-                        component.hAlign = zebra.layout.STRETCH;
-                        component.vAlign = zebra.layout.STRETCH;
-                        container.add(component);
-                        component.applyStyle(dateTimeControl.currentStyle);
-                        return component;
-                    };
-
-                    // Create a container panel for replacement controls
-                    if (!dateTimeControl.controlsPanel) {
-                        dateTimeControl.controlsPanel = addComponentToContainer(api.ui.createStretchPanel(orientation, gap), dateTimeControl);
-                        dateTimeControl.dateTextBox = addComponentToContainer(new zebra.ui.dvDateTimeField, dateTimeControl.controlsPanel);
-                        dateTimeControl.timeTextBox = addComponentToContainer(new zebra.ui.dvDateTimeField, dateTimeControl.controlsPanel);
-                        dateTimeControl.dateTextBox.touch = true;
-                        dateTimeControl.timeTextBox.touch = true;
-                        dateTimeControl.textField.previousField.nextField = dateTimeControl.dateTextBox;
-                        dateTimeControl.dateTextBox.nextField = dateTimeControl.timeTextBox;
-                        dateTimeControl.dateTextBox.domInput = zebra.util.getWindow(form).getInput("datetime");
-                        dateTimeControl.dateTextBox.domID = dateTimeControl.dateTextBox.domInput.first().id;
-                        dateTimeControl.dateTextBox.previousField = dateTimeControl.textField.previousField;
-                        dateTimeControl.timeTextBox.nextField = dateTimeControl.textField.nextField;
-                        dateTimeControl.timeTextBox.domInput = zebra.util.getWindow(form).getInput("datetime");
-                        dateTimeControl.timeTextBox.domID = dateTimeControl.timeTextBox.domInput.first().id;
-                        dateTimeControl.timeTextBox.domInput.first().type = "time";
-
-                        // api.ui.overlayCanvasWithElement(form.apiRef, dateTimeControl.dateTextBox, dateTimeControl.dateTextBox.domInput);
-                        // api.ui.overlayCanvasWithElement(form.apiRef, dateTimeControl.timeTextBox, dateTimeControl.timeTextBox.domInput);
-                    }
-
-                    dateTimeControl.applyStyle(dateTimeControl.currentStyle);
-
-                    // Populate component values
-                    const currentValue = Date.parse(dateTimeControl.textField.dateTimeField.getValue());
-                    if (currentValue) {
-                        dateTimeControl.dateTextBox.setValue(currentValue.toLocaleDateString());
-                        dateTimeControl.timeTextBox.setValue(currentValue.toLocaleTimeString());
-                    }
-                } else {
-                    const message = "Could not find DateTime control. See console for more details.";
-                    console.error(message, "dateTimeProperty:", dateTimeProperty);
-                    throw new Error(message);
-                }
-
-                return dateTimeControl;
-            } else {
-                console.log("Form is not visible, so enhanceDateTimeControl could not be executed.");
-                return null;
-            }
-        };
-    }
-
-    if (!api.ui.dateTimeControlHelper) {
-        api.ui.dateTimeControlHelper = class {
-            constructor({
-                form,
-                action,
-                control,
-                propertySettingName,
-                boundPropertyID,
-                initialValue,
-                textUpdated,
-                onValueSet,
-            }) {
-                this.form = api.ui.ensureForm(form);
-                if (this.form.isVisible) {
-                    this.control = control;
-                    this.propertySettingName = propertySettingName;
-                    this.boundPropertyID = api.utils.toLinker(boundPropertyID);
-                    this.controlHelpers = new Map();
-                    this.value = initialValue;
-
-                    if (this.control) {
-                        [
-                            this.control.dateTextBox,
-                            this.control.timeTextBox,
-                        ].forEach(textBox => {
-                            // Create a helper for each textBox and map by unique ID
-                            const controlHelper = new api.ui.controlHelper(textBox, this.form, action, propertySettingName);
-                            this.controlHelpers.set(textBox.$hash$, controlHelper);
-                            // Bind each textBox's textUpdated event to a shared handler
-                            controlHelper.bind("textUpdated", control => {
-                                api.utils.runFunction(this.setFormValueFromControl, null, [ this.form ]);
-                                api.utils.runFunction(textUpdated, null, [ this ]);
-                            });
-                        });
-                        if (this.boundPropertyID) {
-                            // Create a helper for the form since we need to know when a bound property value may have changed due to row selection
-                            const formHelper = new api.ui.controlHelper(this.form, this.form, action, propertySettingName);
-                            this.formHelper = formHelper;
-                            this.setControlValueFromForm = () => {
-                                // Update the control's value with the bound field's value from the selected record
-                                const gridValue = this.boundPropertyGridValue;
-                                let value = gridValue && gridValue.getValue ? gridValue.getValue() : null;
-                                if (value && value instanceof Date && gridValue.dynamicValue && gridValue.dynamicValue.TimeZoneOffset) {
-                                    // Apply time zone offset to account for framework's DateTime value calculation, or it will be applied twice
-                                    value.addHours(gridValue.dynamicValue.TimeZoneOffset);
-                                }
-                                this.value = value;
-                                api.utils.runFunction(onValueSet, null, [ this ]);
-                            };
-                            this.setFormValueFromControl = () => {
-                                // Assign the value to the bound property
-                                const gridValue = this.boundPropertyGridValue;
-                                const controlValue = this.value;
-                                if (gridValue && controlValue.isValid()) {
-                                    gridValue.displayProperties.setText(controlValue);
-                                }
-                            };
-                            // Bind future value changes
-                            formHelper.bind("selectionChanged", this.setControlValueFromForm);
-                            // Set current value
-                            this.setControlValueFromForm(this.form);
-                        }
-                    } else {
-                        const message = "Could not find control.";
-                        console.error(message, "control:", control);
-                        throw new Error(message);
-                    }
-                }
-            }
-
-            set value(value) {
-                const dateTimeValue = new Date(value);
-                if (dateTimeValue.isValid()) {
-                    this.control.dateTextBox.setValue(dateTimeValue.toLocaleDateString());
-                    this.control.timeTextBox.setValue(dateTimeValue.toLocaleTimeString());
-                }
-            }
-
-            get value() {
-                return new Date(`${this.control.dateTextBox.getValue()} ${this.control.timeTextBox.getValue()}`);
-            }
-
-            get boundPropertyGridValue() {
-                if (this.boundPropertyID && this.form && this.form.selectedRecord && this.form.selectedRecord.gridValues) {
-                    return this.form.selectedRecord.gridValues.getVal(this.boundPropertyID);
-                } else {
-                    return null;
-                }
             }
         };
     }
@@ -1526,10 +1401,10 @@ api.loadExtension("api.ui", () => {
 
     if (!api.ui.ensureCheckbox) {
         /**
-         * Ensure that the passed object is a ComboBox, getting one from passed UID and form, if not.
-         * @param   {object|string|Linker}    panel    A ComboBox, or a string/Linker UID that represents one.
-         * @param   {object}                  panel    A Form that hosts the ComboBox.
-         * @returns {object}                           A ComboBox object.
+         * Ensure that the passed object is a Checkbox, getting one from passed UID and form, if not.
+         * @param   {object|string|Linker}    panel    A Checkbox, or a string/Linker UID that represents one.
+         * @param   {object}                  panel    A Form that hosts the Checkbox.
+         * @returns {object}                           A Checkbox object.
          */
         api.ui.ensureCheckbox = (checkbox, form) => {
             if (!checkbox || (checkbox.typeName === "zebra.ui.dvLayoutItem" && checkbox.checkboxField)) {
@@ -1825,7 +1700,7 @@ api.loadExtension("api.ui", () => {
 
             function findScrollPanel(rawCtl) {
                 if (rawCtl.parent == null) {
-                    return null
+                    return null;
                 }
                 if (rawCtl.scrollManager != null) {
                     return rawCtl;

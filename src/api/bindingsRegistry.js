@@ -71,9 +71,8 @@ api.loadExtension("api.bindingsRegistry", () => {
                     registryItem.executionIntervalHandle = null;
                 }
                 bindings.delete(key);
-                //console.log(`binding deleted '${key}'`);
             } else {
-                //console.log(`No binding has been registered with the key '${key}'.`);
+                if (api._debugMode) console.log(`No binding has been registered with the key '${key}'.`);
             }
             return deregistrationResult;
         };
@@ -106,7 +105,6 @@ api.loadExtension("api.bindingsRegistry", () => {
                 if (registryItem.deregisterOnExecute || deregister) {
                     // If we weren't eplicitly asked to deregister in this call and a passedValue was provided,
                     // set a flag that indicates to delay deregistration until passedValue is read
-
                     if (!deregister && passedValue !== undefined && registryItem.executedPassedValue !== true) {
                         registryItem.delayDeregistration = true;
                     } else  {
@@ -114,7 +112,7 @@ api.loadExtension("api.bindingsRegistry", () => {
                     }
                 }
             } else {
-                //console.log(`No binding has been registered with the key '${key}'.`);
+                if (api._debugMode) console.log(`No binding has been registered with the key '${key}'.`);
             }
             // Return execution result, if any; otherwise, return any deregistration result
             return executionResult || deregistrationResult;
@@ -130,7 +128,7 @@ api.loadExtension("api.bindingsRegistry", () => {
             if (registryItem) {
                 executionResult = registryItem.executionResult;
             } else {
-                //console.log(`No binding has been registered with the key '${key}'.`);
+                if (api._debugMode) console.log(`No binding has been registered with the key '${key}'.`);
             }
             return executionResult;
         }
@@ -152,9 +150,9 @@ api.loadExtension("api.bindingsRegistry", () => {
                     deregistrationResult = api.bindingsRegistry.deregister(key);
                 }
             } else {
-                //console.log(`No binding has been registered with the key '${key}'.`);
+                if (api._debugMode) console.log(`No binding has been registered with the key '${key}'.`);
             }
-            return passedValue === false ? false : passedValue || deregistrationResult;
+            return passedValue;
         }
     }
 });

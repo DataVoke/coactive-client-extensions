@@ -39,11 +39,11 @@ api.loadExtension("api.data", () => {
     let noop = function() {};
 
     if (!api.data.objectToRecord) {
-        api.data.objectToRecord = (object, options, callback = noop) => {
+        api.data.objectToRecord = (object, options, operationCallback = noop) => {
             let { form, record, map } = options;
-            if (record) {
+            if (record && !form) {
                 // If a record was provided, use its form
-                form = record.parent;
+                form = record.parent || record.parentMVC;
             }
             if (!form) {
                 // If no form was provided or detected, use the default one
@@ -68,17 +68,19 @@ api.loadExtension("api.data", () => {
             let objKeys = Object.keys(map);
             for (let i = 0, k = objKeys.length; i < k; i++) {
                 let key = objKeys[i];
-                const lookForPropertyName = map[key].toLowerCase();
-                const recordProperty = record.gridValues.Values.find(item => {
-                    return item.property.Definition.Name.toLowerCase() === lookForPropertyName || item.property.Name.toLowerCase() === lookForPropertyName;
+                const lookForPropertyName = map[key];
+                const recordProperty = lookForPropertyName && record.gridValues.Values.find(item => {
+                    return item.property.Definition.Name.toLowerCase() === lookForPropertyName.toLowerCase() || item.property.Name.toLowerCase() === lookForPropertyName.toLowerCase();
                 });
                 if (recordProperty) {
                     //If the key on the incoming object is an array, use it's first element
                     let expr = Array.isArray(object[key]) ? object[key][0] : object[key];
                     //If we have an invalid expression, add an escape character
-                    expr = expr
-                        .replace(/'/g, "''")
-                        .replace(/}/g, "' + Char(125) + '");
+                    if (typeof expr === "string") {
+                        expr = expr
+                            .replace(/'/g, "''")
+                            .replace(/}/g, "' + Char(125) + '");
+                    }
                     api.actions.execute(form, api.actions.dvCore.SetValue, {
                         propertyId: recordProperty.property.PropertyID,
                         expression: `'${expr}'`
@@ -89,20 +91,22 @@ api.loadExtension("api.data", () => {
                     });
                 }
             }
-            if (!!callback) {
-                callback();
+            if (!!operationCallback) {
+                operationCallback(record);
+                return record;
             }
         };
     }
 
     if (!api.data.objectsToRecords) {
         api.data.objectsToRecords = (objects, options) => {
-            objects.forEach(item => api.data.objectToRecord(item, options));
+            return objects.forEach(item => api.data.objectToRecord(item, options));
         };
     }
 
     if (!api.data.objectToNewRecord) {
-        api.data.objectToNewRecord = (object, options, callback = noop) => {
+        api.data.objectToNewRecord = (object, options, operationCallback = noop) => {
+            console.log("DEPRECATED: This may not work as expected.");
             let { form, map } = options;
             let record;
             if (!form) {
@@ -125,9 +129,9 @@ api.loadExtension("api.data", () => {
                     let keys = Object.keys(map);
                     (function setValuesForRecord (index) {
                         let key = keys[index];
-                        const lookForPropertyName = map[key].toLowerCase();
-                        const recordProperty = record.gridValues.Values.find(item => {
-                            return item.property.Definition.Name.toLowerCase() === lookForPropertyName || item.property.Name.toLowerCase() === lookForPropertyName;
+                        const lookForPropertyName = map[key];
+                        const recordProperty = lookForPropertyName && record.gridValues.Values.find(item => {
+                            return item.property.Definition.Name.toLowerCase() === lookForPropertyName.toLowerCase() || item.property.Name.toLowerCase() === lookForPropertyName.toLowerCase();
                         });
                         if (recordProperty) {
                             //If the key on the incoming object is an array, use it's first element
@@ -144,7 +148,8 @@ api.loadExtension("api.data", () => {
                                     throw new Error(result.actionMessage);
                                 }
                                 if (index === keys.length - 1) {
-                                    callback();
+                                    operationCallback(record);
+                                    return record;
                                 }
                                 else {
                                     index++;
@@ -190,89 +195,104 @@ api.loadExtension("api.data", () => {
 
                 const importBatchRecords = (importData, importForm, lowerLimit, upperLimit) => {
                     return new Promise((resolve) => {
-                        for (let i = lowerLimit, il = upperLimit; i < il; i++) {
-                            const row = importData[i];
-                            const importLoadRecord = app.dv.mvc.createRecord(importForm, Object.values(row)[0]);
+                        const recordCodePropertyID = importForm && importForm.primaryRecordType && importForm.primaryRecordType.Definition && importForm.primaryRecordType.Definition.CodePropertyID;
+                        const recordCodePropertyName = importForm.gridColumns.getVal(recordCodePropertyID).property.Name;
+                        for (let recordIndex = lowerLimit; recordIndex < upperLimit; recordIndex++) {
+                            const importItem = importData[recordIndex];
+                            // Check to see if there is an attached existing native record and replace it instead of creating a new record
+                            const internalRecordID = importItem._record && importItem._record.clientRecord && importItem._record.clientRecord.Record && importItem._record.clientRecord.Record.RecordID &&
+                                  importItem._record.clientRecord.Record.RecordID;
+                            const code = (importItem[recordCodePropertyName] || Math.floor(Math.random() * Math.floor(10000))).toString();
+                            let gridRecord;
+                            if (internalRecordID > 0) {
+                                // Attempt to use any existing record
+                                gridRecord = importForm.records.getVal(internalRecordID);
+                            }
+                            if (!gridRecord) {
+                                // Create a new GridRecord if necessary
+                                gridRecord = app.dv.mvc.createRecord(importForm, code);
+                                // Assign the internal record ID in case the record exists but the form does not currently have it loaded
+                                gridRecord.clientRecord.Record.RecordID = internalRecordID || gridRecord.clientRecord.Record.RecordID;
+                                // Only add the record to the MVC if it's not already there
+                                app.dv.mvc.addRecord(importForm, gridRecord, null);
+                            }
                             if (!makeDataStateDirty) {
                                 // Set data state to not dirty if so indicated
-                                importLoadRecord.clientRecord.Record._State = app.dv.types.EntityStates.Unmodified;
+                                gridRecord.clientRecord.Record._State = app.dv.types.EntityStates.Unmodified;
                             }
-                            app.dv.mvc.addRecord(importForm, importLoadRecord, null);
-                            if (importLoadRecord != null) {
-                                // whether this is a new or found record, we now need to merge it.
-                                let columnCounter = 1;
-                                const maxDataColumns = row.length;
-                                const contextGridColumnValues = importForm.gridColumns.Values;
+                            // whether this is a new or found record, we now need to merge it.
+                            let columnCounter = 1;
+                            const maxDataColumns = importItem.length;
+                            const contextGridColumnValues = importForm.gridColumns.Values;
 
-                                for (let j = 0, jl = contextGridColumnValues.length; j < jl; j++) {
-                                    try {
-                                        // if we are out of columns in our data, import no more.
-                                        if (columnCounter >= maxDataColumns) { break; }
+                            for (let valueIndex = 0; valueIndex < contextGridColumnValues.length; valueIndex++) {
+                                try {
+                                    // if we are out of columns in our data, import no more.
+                                    if (columnCounter >= maxDataColumns) { break; }
 
-                                        // get the current column
-                                        const col = contextGridColumnValues[j];
+                                    // get the current column
+                                    const col = contextGridColumnValues[valueIndex];
 
-                                        if (importForm.primaryRecordType.Definition.CodePropertyID !== null && col.property.UID === importForm.primaryRecordType.Definition.CodePropertyID.UID) {
+                                    if (col.property.UID === recordCodePropertyID.UID) {
+                                        if (!makeDataStateDirty) {
+                                            // Set data state to not dirty if so indicated
+                                            const gridValue = gridRecord.gridValues.getVal(recordCodePropertyID);
+                                            gridValue.dynamicValue._State = app.dv.types.EntityStates.Unmodified;
+                                            gridValue.dynamicValue.Value = gridValue.dynamicValueEdit.Value;
+                                            gridValue.dynamicValueEdit = null;
+                                        }
+                                        // skip the record code property, it was either used to create the record or find it.
+                                        continue;
+                                    }
+
+                                    if (useOrdinalMatching && col.columnProperty.IsHidden == true) {
+                                        // if the column is hidden, it shouldn't be touched by the import.
+                                        continue;
+                                    }
+
+                                    if (importItem.hasOwnProperty(col.property.Name)) {
+                                        // get the import value by name or position.
+                                        let valueToImport = useOrdinalMatching ?
+                                            Object.values(importItem)[columnCounter] :
+                                            importItem[col.property.Name];
+                                        try {
+                                            //Try to decode URI the value
+                                            valueToImport = decodeURIComponent(valueToImport);
+                                        }
+                                        catch(ex) {
+                                            //There was an error decoding the data
+                                            console.log(`An error occurred while performing a decodeURI on row: ${i} column ${columnCounter}`);
+                                        }
+                                        columnCounter++;
+
+                                        // if the text value is "null", then assume that it really is a null value.
+                                        if (valueToImport.toLowerCase() == "null") { valueToImport = null; }
+                                        if ((valueToImport == null || valueToImport == "")) {
+                                            // if they are trying to load an empty value into a new record, skip this.
+                                            continue;
+                                        }
+
+                                        // get the grid value for this column property in this record.
+                                        const gridValueToMerge = gridRecord.gridValues.getVal(col.property.PropertyID);
+
+                                        if (gridValueToMerge.displayProperties.getText() !== valueToImport) {
+                                            // update/merge the value.
+                                            gridValueToMerge.displayProperties.setText(valueToImport);
                                             if (!makeDataStateDirty) {
                                                 // Set data state to not dirty if so indicated
-                                                const gridValue = importLoadRecord.gridValues.getVal(importForm.primaryRecordType.Definition.CodePropertyID);
-                                                gridValue.dynamicValue._State = app.dv.types.EntityStates.Unmodified;
-                                                gridValue.dynamicValue.Value = gridValue.dynamicValueEdit.Value;
-                                                gridValue.dynamicValueEdit = null;
-                                            }
-                                            // skip the record code property, it was either used to create the record or find it.
-                                            continue;
-                                        }
-
-                                        if (useOrdinalMatching && col.columnProperty.IsHidden == true) {
-                                            // if the column is hidden, it shouldn't be touched by the import.
-                                            continue;
-                                        }
-
-                                        if (row.hasOwnProperty(col.property.Name)) {
-                                            // get the import value by name or position.
-                                            let valueToImport = useOrdinalMatching ?
-                                                Object.values(row)[columnCounter] :
-                                                row[col.property.Name];
-                                            try {
-                                                //Try to decode URI the value
-                                                valueToImport = decodeURIComponent(valueToImport);
-                                            }
-                                            catch(ex) {
-                                                //There was an error decoding the data
-                                                console.log(`An error occurred while performing a decodeURI on row: ${i} column ${columnCounter}`);
-                                            }
-                                            columnCounter++;
-
-                                            // if the text value is "null", then assume that it really is a null value.
-                                            if (valueToImport.toLowerCase() == "null") { valueToImport = null; }
-                                            if ((valueToImport == null || valueToImport == "")) {
-                                                // if they are trying to load an empty value into a new record, skip this.
-                                                continue;
-                                            }
-
-                                            // get the grid value for this column property in this record.
-                                            const gridValueToMerge = importLoadRecord.gridValues.getVal(col.property.PropertyID);
-
-                                            if (gridValueToMerge.displayProperties.getText() !== valueToImport) {
-                                                // update/merge the value.
-                                                gridValueToMerge.displayProperties.setText(valueToImport);
-                                                if (!makeDataStateDirty) {
-                                                    // Set data state to not dirty if so indicated
-                                                    gridValueToMerge.dynamicValue._State = app.dv.types.EntityStates.Unmodified;
-                                                    gridValueToMerge.dynamicValue.Value = gridValueToMerge.dynamicValueEdit.Value;
-                                                    gridValueToMerge.dynamicValueEdit = null;
-                                                }
+                                                gridValueToMerge.dynamicValue._State = app.dv.types.EntityStates.Unmodified;
+                                                gridValueToMerge.dynamicValue.Value = gridValueToMerge.dynamicValueEdit.Value;
+                                                gridValueToMerge.dynamicValueEdit = null;
                                             }
                                         }
-                                    }
-                                    catch (e) {
-                                        app.dv.mvc.setBulkInsert(importForm, false);
                                     }
                                 }
-                                resolve();
+                                catch (e) {
+                                    app.dv.mvc.setBulkInsert(importForm, false);
+                                }
                             }
                         }
+                        resolve();
                     });
                 }
 
@@ -383,22 +403,71 @@ api.loadExtension("api.data", () => {
         };
     }
 
-    if (!api.data.getEndpointResult) {
-        api.data.getEndpointResult = async (endpointName, inputParameters = {}) => {
-            try {
-                return new Promise((resolve, reject) => {
-                    if (endpointName) {
-                        // const input = eval(`(function() { return ${inputParameters}; })()`);
-                        app.connection.call("Custom", endpointName, inputParameters, (result, error) => {
-                            resolve(result);
-                        });
-                    } else {
-                        reject("There is no endpoint specified.");
+    if (!api.data.generateGridValuesMap) {
+        api.data.generateGridValuesMap = (formOrGridRecord) => {
+            const gridRecord = formOrGridRecord instanceof app.dv.entities.GridRecord ?
+                  formOrGridRecord :
+                  app.dv.mvc.createRecord(formOrGridRecord, "");
+            const gridValuesMap = {};
+            gridRecord.gridValues.Values.forEach(gridValue => {
+                gridValuesMap[`${gridValue.property.Name}`] = gridValue;
+            });
+            return gridValuesMap;
+        };
+    }
+
+    if (!api.data.objectToGridRecord) {
+        api.data.objectToGridRecord = (form, object, gridRecord = app.dv.mvc.createRecord(form, "")) => {
+            const gridValuesMap = api.data.generateGridValuesMap(gridRecord);
+            for (let key in object) {
+                const gridValue = gridValuesMap[key];
+                if (gridValue) {
+                    let valueToSet = object[key];
+                    if (gridValue.dynamicValue.DataType === app.dv.types.PropertyDataType.DateTime) {
+                        valueToSet = new Date(valueToSet);
+                        if (!valueToSet.isValid()) {
+                            valueToSet = null;
+                        }
                     }
-                });
-            } catch (exc) {
-                throw exc;
+                    gridValue.setValue(valueToSet);
+                }
+            };
+            return gridRecord;
+        }
+    }
+
+    if (!api.data.getExpressionValue) {
+        api.data.getExpressionValue = (gridValue) => {
+            const gridRecord = gridValue.parentRecord;
+            const form = gridRecord.parentMVC;
+            const property = gridValue.property;
+            const formula = property.Definition.Formula;
+            if (formula) {
+                const viewID = form.drivingView.ViewID;
+                const expression = new app.dv.helpers.expression.create(property, viewID, formula, null, form);
+                return expression.evaluate(viewID, gridRecord);
+            } else {
+                return null;
             }
         }
     }
-});
+
+    if (!api.data.getEndpointResult) {
+         api.data.getEndpointResult = async (endpointName, inputParameters = {}) => {
+             try {
+                 return new Promise((resolve, reject) => {
+                     if (endpointName) {
+                         // const input = eval(`(function() { return ${inputParameters}; })()`);
+                         app.connection.call("Custom", endpointName, inputParameters, (result, error) => {
+                             resolve(result);
+                         });
+                     } else {
+                         reject("There is no endpoint specified.");
+                     }
+                 });
+             } catch (exc) {
+                 throw exc;
+             }
+         }
+     }
+ });
