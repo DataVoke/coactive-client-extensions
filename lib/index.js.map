@@ -1,1 +1,1 @@
-{"version":3,"sources":["../src/index.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;AACA","sourcesContent":["export default from './api';\nexport { default as AsyncFunction } from './AsyncFunction';\n"],"file":"index.js"}
+{"version":3,"sources":["../src/index.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;;;;;;AACA;;AACA","sourcesContent":["export default from './api';\nexport { default as AsyncFunction } from './AsyncFunction';\nexport { default as ExtendCoactiveTypes } from './ExtendCoactiveTypes';\n"],"file":"index.js"}
