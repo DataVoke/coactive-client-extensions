@@ -1,5 +1,5 @@
 /**
- * Custom Action: Extend Coactive Types API
+ * Extend Coactive Types API
  * Extends the API of native Coactive types with additional helper functions.
  * Dependencies:
  *    api.loadExtension

@@ -1,7 +1,7 @@
 // NOTE: All code herein should be ES5-compatible. Other extensions will use this module to transpile back to ES5 when necessary, so they may use ES6+
 
 /**
- * Custom Action: api.loadExtension
+ * api.loadExtension
  * Create an extension loader that can be used to extend the app's client-side API.
  */
 // These are dependencies of babel-standalone

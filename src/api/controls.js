@@ -1,5 +1,4 @@
 /**
- * Custom Action: Extend api.controls
  * Extends the api.controls namespace with additional helper functions.
  * Dependencies:
  *    api.loadExtension

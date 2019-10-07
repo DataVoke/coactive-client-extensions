@@ -1,5 +1,4 @@
 /**
- * Custom Action: Extend api.data
  * Extends the api.data namespace with additional helper functions.
  * Dependencies:
  *    api.loadExtension

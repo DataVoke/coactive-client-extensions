@@ -1,6 +1,5 @@
 /**
- * Custom Action: Extend api.bindingsRegistry
- * Creates a bindingsRegistry namespace off of api used to manage custom client-side bindings.
+ * Creates an api.bindingsRegistry namespace used to manage custom client-side bindings.
  * This includes control events and the custom actions Register Event, Deregister Event and Fire Event.
  * Dependencies:
  *    api.loadExtension

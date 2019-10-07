@@ -1,5 +1,4 @@
 /**
- * Custom Action: Extend api.actions
  * Extends the api.actions namespace with additional helper functions.
  * Dependencies:
  *    api.loadExtension

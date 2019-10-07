@@ -1,5 +1,4 @@
 /**
- * Custom Action: Extend api.environment
  * Extends the api.environment namespace with additional helper functions.
  * Dependencies:
  *    api.loadExtension

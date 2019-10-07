@@ -1,5 +1,4 @@
 /**
- * Custom Action: Extend api.designer
  * Extends the api.designer namespace with additional helper functions.
  * Dependencies:
  *    api.loadExtension

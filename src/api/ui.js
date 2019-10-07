@@ -1,5 +1,4 @@
 /**
- * Custom Action: Extend api.ui
  * Extends the api.ui namespace with additional helper functions.
  * Dependencies:
  *    api.loadExtension
