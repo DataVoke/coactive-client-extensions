@@ -1,6 +1,6 @@
 {
   "name": "coactive-client-extensions",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Coactive client extensions",
   "main": "lib/index.js",
   "scripts": {

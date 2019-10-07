@@ -305,8 +305,8 @@ api.loadExtension("api.utils", () => {
         };
     }
 
-     if (!api.data.IcsGenerator) {
-         api.data.IcsGenerator = class IcsGenerator {
+     if (!api.utils.IcsGenerator) {
+         api.utils.IcsGenerator = class IcsGenerator {
             // From https://github.com/matthiasanderer/icsFormatter
             constructor() {
                 if (navigator.userAgent.indexOf('MSIE') > -1 && navigator.userAgent.indexOf('MSIE 10') == -1) {
