@@ -419,7 +419,7 @@ api.loadExtension("api.utils", () => {
             return new Promise((resolve, reject) => {
                 try {
                     const loadFonts = () => {
-                        WebFont.load({
+                        window.WebFont.load({
                             google: {
                                 families: fontNames
                             }
@@ -427,7 +427,7 @@ api.loadExtension("api.utils", () => {
                         resolve();
                     };
 
-                    if (typeof(WebFont) !== "undefined") {
+                    if (typeof(window.WebFont) !== "undefined") {
                         // Load fonts if the API is already loaded
                         loadFonts();
                     } else {
