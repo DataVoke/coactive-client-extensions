@@ -3,6 +3,7 @@
  * Dependencies:
  *    api.loadExtension
  *    api.ui
+ *    api.actions
  */
 api.loadExtension("api.data", () => {
     if (!api.data.recordToObject) {

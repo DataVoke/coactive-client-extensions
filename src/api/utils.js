@@ -413,31 +413,4 @@ api.loadExtension("api.utils", () => {
             }
         };
     }
-
-    if (!api.utils.loadGoogleFonts) {
-        api.utils.loadGoogleFonts = (fontNames) => {
-            return new Promise((resolve, reject) => {
-                try {
-                    const loadFonts = () => {
-                        window.WebFont.load({
-                            google: {
-                                families: fontNames
-                            }
-                        });
-                        resolve();
-                    };
-
-                    if (typeof(window.WebFont) !== "undefined") {
-                        // Load fonts if the API is already loaded
-                        loadFonts();
-                    } else {
-                        // Load API and then load specified fonts
-                        api.utils.loadResource("https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js", "JS", loadFonts);
-                    }
-                } catch (exception) {
-                    reject(exception);
-                }
-            });
-        }
-    }
 });
