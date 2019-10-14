@@ -7,7 +7,7 @@
  *    api.utils.runFunction
  */
 api.loadExtension("api.designer", () => {
-    api.utils.loadResource("jsondiffpatch", "npm", () => {
+    require([`${api.utils.npmProviderUrl || "https://unpkg.com/"}/jsondiffpatch`], () => {
         api.designer.diff = () => {
             return app.dv.cache.views.allOriginalViews.Values.map(original => {
                 const modified = app.dv.cache.views.allViews.getVal(original.ViewID);
