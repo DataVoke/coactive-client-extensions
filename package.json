@@ -1,11 +1,9 @@
 {
   "name": "coactive-client-extensions",
-  "version": "0.0.31",
+  "version": "0.0.32",
   "description": "Coactive client extensions",
   "main": "lib/index.js",
-  "scripts": {
-    "build": "rimraf lib && babel src -d lib --source-maps true"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DataVoke/coactive-client-extensions.git"
@@ -21,13 +19,6 @@
     "url": "https://github.com/DataVoke/coactive-client-extensions/issues"
   },
   "homepage": "https://github.com/DataVoke/coactive-client-extensions#readme",
-  "devDependencies": {
-    "@babel/cli": "^7.6.2",
-    "@babel/core": "^7.6.2",
-    "@babel/plugin-proposal-export-default-from": "^7.5.2",
-    "@babel/preset-env": "^7.6.2",
-    "@babel/register": "^7.6.2",
-    "rimraf": "^3.0.0"
-  },
+  "devDependencies": {},
   "dependencies": {}
 }
