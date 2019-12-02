@@ -477,4 +477,20 @@ export default (() => {
             }
         };
     }
+
+    if (!api.data.getBinaryValueAsync) {
+        api.data.getBinaryValueAsync = async (gridValue) => {
+            if (gridValue instanceof app.dv.entities.GridValue) {
+                const splitFileName = app.dv.mvc.gridRecord.gridValue.getBinaryFilename(gridValue).split(".");
+                const imageType = splitFileName[splitFileName.length - 1];
+                const record = await app.dv.services.call(app.dv.services.endpoints.getByID, {
+                    TypeValueID: gridValue.dynamicValue.TypeValueID,
+                    ForType: app.dv.types.PropertyDataType.Binary
+                });
+                return app.dv.tools.arrayBufferToBase64(record.Value.data);
+            } else {
+                if (api._debugMode) console.log(`${gridValue} is not a GridValue.`);
+            }
+        };
+    }
 })();
