@@ -294,13 +294,13 @@ export default (() => {
          * Closes a form.
          * @param {Object} formID    A raw form, or a numeric ID, UID or linker ({ UID: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", Type: "View" }) that identifies the form.
          */
-        api.utils.closeForm = (form) => {
+        api.utils.closeForm = (form, callback) => {
             if (!form.typeName || form.typeName !== "app.dv.mvc") {
                 const formFinder = api.utils.validateFormID(form);
                 form = api.utils.getOpenForm(formFinder.formID);
             }
             if (form) {
-                app.dv.mvc.close(form);
+                return app.dv.mvc.close(form, callback);
             }
         };
     }

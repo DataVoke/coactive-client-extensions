@@ -3,7 +3,9 @@
   "version": "0.0.38",
   "description": "Coactive client extensions",
   "main": "lib/index.js",
-  "scripts": {},
+  "scripts": {
+    "bump-n-tag": "npm version patch && git push && git push --tags"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DataVoke/coactive-client-extensions.git"
