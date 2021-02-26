@@ -40,6 +40,7 @@ export default (() => {
                 if (style?.Visible?.contains(searchTerm)) {
                     matches.push({
                         view,
+                        control: child,
                         style,
                     });
                 }
