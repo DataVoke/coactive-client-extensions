@@ -187,7 +187,8 @@ export default (() => {
                 const batchCount = Math.ceil(objectCount / progressIncrement);
 
                 // Prevent UI updates while adding records
-                app.dv.mvc.setBulkInsert(form, true);
+                if (form && form.setBulkInsert) form.setBulkInsert(true);
+                else app.dv.mvc.setBulkInsert(form, true);
 
                 if (progressBar) {
                     progressBar.maxValue = objectCount;
@@ -202,7 +203,7 @@ export default (() => {
                             const importItem = importData[recordIndex];
                             // Check to see if there is an attached existing native record and replace it instead of creating a new record
                             const internalRecordID = importItem._record && importItem._record.clientRecord && importItem._record.clientRecord.Record && importItem._record.clientRecord.Record.RecordID &&
-                                  importItem._record.clientRecord.Record.RecordID;
+                                importItem._record.clientRecord.Record.RecordID;
                             const code = (importItem[recordCodePropertyName] || Math.floor(Math.random() * Math.floor(10000))).toString();
                             let gridRecord;
                             if (internalRecordID > 0) {
@@ -211,11 +212,13 @@ export default (() => {
                             }
                             if (!gridRecord) {
                                 // Create a new GridRecord if necessary
-                                gridRecord = app.dv.mvc.createRecord(importForm, code);
+                                if (importForm && importForm.createRecord) gridRecord = importForm.createRecord(code);
+                                else gridRecord = app.dv.mvc.createRecord(importForm, code);
                                 // Assign the internal record ID in case the record exists but the form does not currently have it loaded
                                 gridRecord.clientRecord.Record.RecordID = internalRecordID || gridRecord.clientRecord.Record.RecordID;
                                 // Only add the record to the MVC if it's not already there
-                                app.dv.mvc.addRecord(importForm, gridRecord, null);
+                                if (importForm && importForm.addRecord) importForm.addRecord(gridRecord, null);
+                                else app.dv.mvc.addRecord(importForm, gridRecord, null);
                             }
                             if (!makeDataStateDirty) {
                                 // Set data state to not dirty if so indicated
@@ -289,7 +292,8 @@ export default (() => {
                                     }
                                 }
                                 catch (e) {
-                                    app.dv.mvc.setBulkInsert(importForm, false);
+                                    if (importForm && importForm.setBulkInsert) importForm.setBulkInsert(false);
+                                    else app.dv.mvc.setBulkInsert(importForm, false);
                                 }
                             }
                         }
@@ -302,7 +306,8 @@ export default (() => {
 
                     if (batchIdx === batchCount) {
                         // stop bulk insert on the MVC and show the records that were imported in the MVC grid...
-                        app.dv.mvc.setBulkInsert(form, false);
+                        if (form && form.setBulkInsert) form.setBulkInsert(false);
+                        else app.dv.mvc.setBulkInsert(form, false);
                         resolve();
                         return;
                     }
@@ -406,9 +411,11 @@ export default (() => {
 
     if (!api.data.generateGridValuesMap) {
         api.data.generateGridValuesMap = (formOrGridRecord) => {
-            const gridRecord = formOrGridRecord instanceof app.dv.entities.GridRecord ?
-                  formOrGridRecord :
-                  app.dv.mvc.createRecord(formOrGridRecord, "");
+            let gridRecord;
+            if (formOrGridRecord instanceof app.dv.entities.GridRecord) gridRecord = formOrGridRecord;
+            else if (formOrGridRecord && formOrGridRecord.createRecord) gridRecord = formOrGridRecord.createRecord("");
+            else gridRecord = app.dv.mvc.createRecord(formOrGridRecord, "");
+
             const gridValuesMap = {};
             gridRecord.gridValues.Values.forEach(gridValue => {
                 gridValuesMap[`${gridValue.property.Name}`] = gridValue;
@@ -418,7 +425,11 @@ export default (() => {
     }
 
     if (!api.data.objectToGridRecord) {
-        api.data.objectToGridRecord = (form, object, gridRecord = app.dv.mvc.createRecord(form, "")) => {
+        api.data.objectToGridRecord = (form, object, gridRecord) => {
+            if (gridRecord == null) {
+                if (form && form.createRecord) gridRecord = form.createRecord("");
+                else gridRecord = app.dv.mvc.createRecord(form, "");
+            }
             const gridValuesMap = api.data.generateGridValuesMap(gridRecord);
             for (let key in object) {
                 const gridValue = gridValuesMap[key];
@@ -493,4 +504,6 @@ export default (() => {
             }
         };
     }
+
+    return api.data;
 })();
