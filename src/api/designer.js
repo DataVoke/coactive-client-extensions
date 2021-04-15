@@ -34,6 +34,19 @@ export default (() => {
     };
 
     api.designer.search = (searchTerm) => {
+        const matchInChildrenRecursively = (view, container) => {
+            Array.isArray(container.Children) && container.Children.forEach(child => {
+                const style = child.Style;
+                if (style?.Visible?.contains(searchTerm)) {
+                    matches.push({
+                        view,
+                        control: child,
+                        style,
+                    });
+                }
+                matchInChildrenRecursively(view, child);
+            });
+        };
         const matches = [];
         app.dv.cache.views.allViews.Values.forEach(view => {
             view.Definition.ViewMacros.forEach(task => {
@@ -52,6 +65,10 @@ export default (() => {
                     }
                 });
             });
+            view.Definition.FormLayout?.forEach(layout => {
+                matchInChildrenRecursively(view, layout);                
+            });
+                
         });
         return matches;
     };
