@@ -412,9 +412,11 @@ export default (() => {
 
     if (!api.data.generateGridValuesMap) {
         api.data.generateGridValuesMap = (formOrGridRecord) => {
-            const gridRecord = formOrGridRecord instanceof app.dv.entities.GridRecord ?
-                  formOrGridRecord :
-                  app.dv.mvc.createRecord(formOrGridRecord, "");
+            let gridRecord;
+            if (formOrGridRecord instanceof app.dv.entities.GridRecord) gridRecord = formOrGridRecord;
+            else if (formOrGridRecord != null && formOrGridRecord.createRecord) gridRecord = formOrGridRecord.createRecord("");
+            else gridRecord = app.dv.mvc.createRecord(formOrGridRecord, "");
+
             const gridValuesMap = {};
             gridRecord.gridValues.Values.forEach(gridValue => {
                 gridValuesMap[`${gridValue.property.Name}`] = gridValue;
@@ -424,7 +426,11 @@ export default (() => {
     }
 
     if (!api.data.objectToGridRecord) {
-        api.data.objectToGridRecord = (form, object, gridRecord = app.dv.mvc.createRecord(form, "")) => {
+        api.data.objectToGridRecord = (form, object, gridRecord) => {
+            if (gridRecord == null) {
+                if (form.createRecord) gridRecord = form.createRecord("");
+                else gridRecord = app.dv.mvc.createRecord(form, "");
+            }
             const gridValuesMap = api.data.generateGridValuesMap(gridRecord);
             for (let key in object) {
                 const gridValue = gridValuesMap[key];
